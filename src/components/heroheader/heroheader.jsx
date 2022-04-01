@@ -1,19 +1,32 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Grid, Typography } from "@mui/material";
 import styles from "./heroheader.module.scss";
 import { useSelector, useDispatch } from "react-redux";
 import { async } from "@firebase/util";
 import { randomUser } from "../../redux/action/action";
+import {
+  saveDocumentInFirestore,
+  getDocumentFromFirestore,
+} from "../../functions/functions";
 
 const HeroHeader = () => {
+  let [randomName, setRandomName] = useState("Someone");
   let randomSignIn = useSelector((state) => state.randomSignIn);
   let dispatch = useDispatch();
+
   function randomSignInFunc() {
     dispatch(randomUser());
   }
+
   useEffect(async () => {
     let user = await randomSignIn;
-    console.log(user);
+    user.uid && saveDocumentInFirestore(user.uid, { name: randomName });
+  }, [randomSignIn]);
+
+  useEffect(async () => {
+    let user = await randomSignIn;
+    let responseDetails = await getDocumentFromFirestore(user ? user.uid : "0");
+    setRandomName("Someone" && responseDetails?.data()?.name);
   }, [randomSignIn]);
   return (
     <div className={styles.hero_header_container}>
@@ -30,7 +43,11 @@ const HeroHeader = () => {
               <Typography varient="p" component="p">
                 What's your nickname?
               </Typography>
-              <input type="text" value="Someone" />
+              <input
+                type="text"
+                value={randomName}
+                onChange={(e) => setRandomName(e.target.value)}
+              />
               <br />
               <button onClick={randomSignInFunc}>Talk to strangers</button>
             </div>
